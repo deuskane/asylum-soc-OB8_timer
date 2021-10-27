@@ -1,0 +1,221 @@
+; ;------------------------------------
+; ; Test 000
+; ;
+; ;------------------------------------
+
+; ;------------------------------------
+; ; directive compilation fichier
+; ;------------------------------------
+
+                    VHDL      "../../../infra/soft/pBlazIDE374/ROM/ROM_blank_adh.vhd", "../src/OpenBlaze8_ROM.vhd", "OpenBlaze8_ROM"
+
+; ;------------------------------------
+; ; Constantes
+; ;------------------------------------
+sp                  EQU       sF
+
+; ;------------------------------------
+; ; directives pour le simulateur:  definition des  E/S
+; ;------------------------------------
+switch_id           EQU       $00
+led_id              EQU       $04
+timer_id            EQU       $10
+
+switch              DSIN      switch_id
+led                 DSOUT     led_id
+timer_ctrl_w        DSOUT     timer_id + 0
+timer_ctrl_r        DSIN      timer_id + 0
+timer_cnt0          DSOUT     timer_id + 4
+timer_cnt1          DSOUT     timer_id + 5
+timer_cnt2          DSOUT     timer_id + 6
+timer_cnt3          DSOUT     timer_id + 7
+
+; ;------------------------------------
+; ; MAIN
+; ;------------------------------------
+                    ORG       $00
+main: 
+                    LOAD      sp, 0
+                    LOAD      s0, 0
+main_loop: 
+                    OUT       s0, led_id
+
+                    IN        s1, switch_id
+                    TEST      s1, $01
+                    CALL      Z, main_loop_wait_1s_hard
+                    
+main_loop_wait_1s_soft: 
+                    SUB       s0, 1
+                    CALL      wait_1s_soft
+                    JUMP      main_loop
+
+main_loop_wait_1s_hard: 
+                    ADD       s0, 1
+                    CALL      wait_1s_hard
+                    JUMP      main_loop
+
+; ;------------------------------------
+; ; wait_1s
+; ; arguments : none
+; ; results   : none
+; ; Attendre 1s
+; ;------------------------------------
+wait_1s: 
+                    CALL      wait_1s_soft
+                    RET       
+
+wait_1s_soft: 
+; ;                 save
+                    STORE     s0, sp
+                    ADD       sp, 1
+
+                    LOAD      s0, 10
+wait_1s_soft_loop: 
+                    CALL      wait_100ms
+                    SUB       s0, 1
+                    JUMP      NZ, wait_1s_soft_loop
+
+; ;                 restore
+                    SUB       sp, 1
+                    FETCH     s0, sp
+                    RET       
+
+wait_1s_hard: 
+; ;                 save
+                    STORE     s0, sp
+                    ADD       sp, 1
+
+; ; 	            Timer Disable
+                    LOAD      s0, $00
+                    OUT       s0, timer_id + 1
+
+; ;                 Timer hardware version
+; ;                 Set 1000 in counter
+                    LOAD      s0, $E8
+                    OUT       s0, timer_id + 4
+                    LOAD      s0, $03
+                    OUT       s0, timer_id + 5
+                    LOAD      s0, $00
+                    OUT       s0, timer_id + 6
+                    OUT       s0, timer_id + 7
+
+; ; 	            Timer Enable + Use Tick
+                    LOAD      s0, $09
+                    OUT       s0, timer_id + 1
+wait_1s_hard_loop: 
+                    IN        s0, timer_id + 0
+                    TEST      s0, $01
+                    JUMP      Z, wait_1s_hard_loop
+
+; ;                 restore
+                    SUB       sp, 1
+                    FETCH     s0, sp
+                    RET       
+
+; ;------------------------------------
+; ; wait_100ms
+; ; arguments : none
+; ; results   : none
+; ; Attendre 100 ms
+; ;------------------------------------
+wait_100ms: 
+                    CALL      wait_100ms_hard
+                    RET       
+
+wait_100ms_hard: 
+; ;                 save
+                    STORE     s0, sp
+                    ADD       sp, 1
+
+; ; 	            Timer Disable
+                    LOAD      s0, $00
+                    OUT       s0, timer_id + 0
+
+; ;                 Timer hardware version
+; ;                 Set 100 in counter
+                    LOAD      s0, $64
+                    OUT       s0, timer_id + 4
+                    LOAD      s0, $00
+                    OUT       s0, timer_id + 5
+                    OUT       s0, timer_id + 6
+                    OUT       s0, timer_id + 7
+
+; ; 	            Timer Enable + Use Tick
+                    LOAD      s0, $09
+                    OUT       s0, timer_id + 1
+
+wait_100ms_hard_loop: 
+                    IN        s0, timer_id + 0
+                    TEST      s0, $01
+                    JUMP      Z, wait_100ms_hard_loop
+
+; ;                 restore
+                    SUB       sp, 1
+                    FETCH     s0, sp
+                    RET       
+
+wait_100ms_soft: 
+; ;                 W = 6 + W0 + 7
+; ;                 W = 6 + 2 + N0*(2+W1) + 1 + 7
+; ;                 W = 16 + N0*(2+W1)
+; ;                 W = 16 + N0*(2 + 2 + N1*(2+W2) + 1)
+; ;                 W = 16 + N0*(5 + N1*(2+W2))
+; ;                 W = 16 + N0*(5 + N1*(2+ 2 + N2*2 + 1))
+; ;                 W = 16 + N0*(5 + N1*(5 + N2*2))
+; ;                 W = 16 + 5*N0 + 5*N0*N1 + 2*N0*N1*N2
+
+; ;					50 Mhz = 50 000 000 cycle/s
+; ;					   	   =  5 000 000 cycle/100ms
+; ; 					   =  2 500 000 inst/100ms
+; ;					N0 = 42
+; ; 				N1 = 119
+; ; 				N2 = 247
+
+; ;                 save
+                    STORE     s0, sp
+                    ADD       sp, 1
+                    STORE     s1, sp
+                    ADD       sp, 1
+                    STORE     s2, sp
+                    ADD       sp, 1
+
+; ;                 while1 : W0= 2 + N0*(2+W1) + 1
+                    LOAD      s0, 42
+                    JUMP      wait_100ms_while0
+wait_100ms_while0_body: 
+; ;                 while1 : W1= 2 + N1*(2+W2) + 1
+                    LOAD      s1, 119
+                    JUMP      wait_100ms_while1
+wait_100ms_while1_body: 
+
+; ;                 while2 : W2= 2 + N2*2 + 1
+                    LOAD      s2, 247
+                    JUMP      wait_100ms_while2
+wait_100ms_while2_body: 
+                    SUB       s2, 1
+wait_100ms_while2: 
+                    JUMP      NZ, wait_100ms_while2_body
+
+                    SUB       s1, 1
+wait_100ms_while1: 
+                    JUMP      NZ, wait_100ms_while1_body
+
+                    SUB       s0, 1
+wait_100ms_while0: 
+                    JUMP      NZ, wait_100ms_while0_body
+
+; ;                 restore
+                    SUB       sp, 1
+                    FETCH     s2, sp
+                    SUB       sp, 1
+                    FETCH     s1, sp
+                    SUB       sp, 1
+                    FETCH     s0, sp
+                    RET       
+
+
+; ;------------------------------------
+; ; Interrupt VECTOR
+; ;------------------------------------
+                    ORG       $3FF
+                    RETI      ENABLE
