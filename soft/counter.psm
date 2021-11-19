@@ -20,23 +20,20 @@ sp                  EQU       sF
 switch_id           EQU       $00
 led_id              EQU       $04
 timer_id            EQU       $10
-
-switch              DSIN      switch_id
-led                 DSOUT     led_id
-timer_ctrl_w        DSOUT     timer_id + 0
-timer_ctrl_r        DSIN      timer_id + 0
-timer_cnt0          DSOUT     timer_id + 4
-timer_cnt1          DSOUT     timer_id + 5
-timer_cnt2          DSOUT     timer_id + 6
-timer_cnt3          DSOUT     timer_id + 7
+timer_status        EQU       $10
+timer_control       EQU       $11
+timer_counter0      EQU       $14
+timer_counter1      EQU       $15
+timer_counter2      EQU       $16
+timer_counter3      EQU       $17
 
 ; ;------------------------------------
 ; ; MAIN
 ; ;------------------------------------
                     ORG       $00
 main: 
-                    LOAD      sp, 0
-                    LOAD      s0, 0
+                    LOAD      sp, $0
+                    LOAD      s0, $0
 main_loop: 
                     OUT       s0, led_id
 
@@ -45,12 +42,12 @@ main_loop:
                     CALL      Z, main_loop_wait_1s_hard
                     
 main_loop_wait_1s_soft: 
-                    SUB       s0, 1
+                    SUB       s0, $1
                     CALL      wait_1s_soft
                     JUMP      main_loop
 
 main_loop_wait_1s_hard: 
-                    ADD       s0, 1
+                    ADD       s0, $1
                     CALL      wait_1s_hard
                     JUMP      main_loop
 
@@ -67,48 +64,48 @@ wait_1s:
 wait_1s_soft: 
 ; ;                 save
                     STORE     s0, sp
-                    ADD       sp, 1
+                    ADD       sp, $1
 
-                    LOAD      s0, 10
+                    LOAD      s0, $a
 wait_1s_soft_loop: 
                     CALL      wait_100ms
-                    SUB       s0, 1
+                    SUB       s0, $1
                     JUMP      NZ, wait_1s_soft_loop
 
 ; ;                 restore
-                    SUB       sp, 1
+                    SUB       sp, $1
                     FETCH     s0, sp
                     RET       
 
 wait_1s_hard: 
 ; ;                 save
                     STORE     s0, sp
-                    ADD       sp, 1
+                    ADD       sp, $1
 
 ; ; 	            Timer Disable
                     LOAD      s0, $00
-                    OUT       s0, timer_id + 1
+                    OUT       s0, timer_control
 
 ; ;                 Timer hardware version
 ; ;                 Set 1000 in counter
                     LOAD      s0, $E8
-                    OUT       s0, timer_id + 4
+                    OUT       s0, timer_counter0
                     LOAD      s0, $03
-                    OUT       s0, timer_id + 5
+                    OUT       s0, timer_counter1
                     LOAD      s0, $00
-                    OUT       s0, timer_id + 6
-                    OUT       s0, timer_id + 7
+                    OUT       s0, timer_counter2
+                    OUT       s0, timer_counter3
 
 ; ; 	            Timer Enable + Use Tick
                     LOAD      s0, $09
-                    OUT       s0, timer_id + 1
+                    OUT       s0, timer_control
 wait_1s_hard_loop: 
-                    IN        s0, timer_id + 0
+                    IN        s0, timer_status
                     TEST      s0, $01
                     JUMP      Z, wait_1s_hard_loop
 
 ; ;                 restore
-                    SUB       sp, 1
+                    SUB       sp, $1
                     FETCH     s0, sp
                     RET       
 
@@ -125,32 +122,32 @@ wait_100ms:
 wait_100ms_hard: 
 ; ;                 save
                     STORE     s0, sp
-                    ADD       sp, 1
+                    ADD       sp, $1
 
 ; ; 	            Timer Disable
                     LOAD      s0, $00
-                    OUT       s0, timer_id + 0
+                    OUT       s0, timer_status
 
 ; ;                 Timer hardware version
 ; ;                 Set 100 in counter
                     LOAD      s0, $64
-                    OUT       s0, timer_id + 4
+                    OUT       s0, timer_counter0
                     LOAD      s0, $00
-                    OUT       s0, timer_id + 5
-                    OUT       s0, timer_id + 6
-                    OUT       s0, timer_id + 7
+                    OUT       s0, timer_counter1
+                    OUT       s0, timer_counter2
+                    OUT       s0, timer_counter3
 
 ; ; 	            Timer Enable + Use Tick
                     LOAD      s0, $09
-                    OUT       s0, timer_id + 1
+                    OUT       s0, timer_control
 
 wait_100ms_hard_loop: 
-                    IN        s0, timer_id + 0
+                    IN        s0, timer_status
                     TEST      s0, $01
                     JUMP      Z, wait_100ms_hard_loop
 
 ; ;                 restore
-                    SUB       sp, 1
+                    SUB       sp, $1
                     FETCH     s0, sp
                     RET       
 
@@ -173,43 +170,43 @@ wait_100ms_soft:
 
 ; ;                 save
                     STORE     s0, sp
-                    ADD       sp, 1
+                    ADD       sp, $1
                     STORE     s1, sp
-                    ADD       sp, 1
+                    ADD       sp, $1
                     STORE     s2, sp
-                    ADD       sp, 1
+                    ADD       sp, $1
 
 ; ;                 while1 : W0= 2 + N0*(2+W1) + 1
-                    LOAD      s0, 42
+                    LOAD      s0, $2A ; 42
                     JUMP      wait_100ms_while0
 wait_100ms_while0_body: 
 ; ;                 while1 : W1= 2 + N1*(2+W2) + 1
-                    LOAD      s1, 119
+                    LOAD      s1, $77 ; 119
                     JUMP      wait_100ms_while1
 wait_100ms_while1_body: 
 
 ; ;                 while2 : W2= 2 + N2*2 + 1
-                    LOAD      s2, 247
+                    LOAD      s2, $F7 ; 247
                     JUMP      wait_100ms_while2
 wait_100ms_while2_body: 
-                    SUB       s2, 1
+                    SUB       s2, $1
 wait_100ms_while2: 
                     JUMP      NZ, wait_100ms_while2_body
 
-                    SUB       s1, 1
+                    SUB       s1, $1
 wait_100ms_while1: 
                     JUMP      NZ, wait_100ms_while1_body
 
-                    SUB       s0, 1
+                    SUB       s0, $1
 wait_100ms_while0: 
                     JUMP      NZ, wait_100ms_while0_body
 
 ; ;                 restore
-                    SUB       sp, 1
+                    SUB       sp, $1
                     FETCH     s2, sp
-                    SUB       sp, 1
+                    SUB       sp, $1
                     FETCH     s1, sp
-                    SUB       sp, 1
+                    SUB       sp, $1
                     FETCH     s0, sp
                     RET       
 
