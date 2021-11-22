@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2017-03-30
--- Last update: 2021-09-04
+-- Last update: 2021-11-20
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -29,8 +29,9 @@ end entity tb_OB8_TIMER;
 
 architecture tb of tb_OB8_TIMER is
   -- =====[ Parameters ]==========================
-  constant TB_PERIOD               : time    := 10 ns;
-  constant TB_DURATION             : time    := 1001 ms;
+  constant TB_PERIOD               : time    := 20 ns; -- 50MHz
+--constant TB_DURATION             : time    := 1001 ms;
+  constant TB_DURATION             : time    := 4 ms;
 
   -- =====[ Signals ]=============================
   signal clk_i      : std_logic := '0';
@@ -89,7 +90,9 @@ begin  -- architecture tb
       arstn_i <= '1';
 
       switch_i <= "01010110";
-      wait until (led_o = switch_i) ;
+
+      report "[TESTBENCH] wait led = 1";
+      wait until (led_o = "00000001");
 
       -- for i in 0 to 7 loop
       --   switch_i    <= (others => '0');
