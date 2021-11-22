@@ -87,7 +87,7 @@ wait_1s_hard:
                     OUT       s0, timer_control
 
 ; ;                 Timer hardware version
-; ;                 Set 1000 in counter
+; ;                 Set 1000 in counter (0x3E8)
                     LOAD      s0, $E8
                     OUT       s0, timer_counter0
                     LOAD      s0, $03

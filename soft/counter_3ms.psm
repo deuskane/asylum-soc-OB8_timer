@@ -1,0 +1,86 @@
+; ;------------------------------------
+; ; Test 000
+; ;
+; ;------------------------------------
+
+; ;------------------------------------
+; ; Constantes
+; ;------------------------------------
+sp                  EQU       sF
+
+; ;------------------------------------
+; ; directives pour le simulateur:  definition des  E/S
+; ;------------------------------------
+switch_id           EQU       $00
+led_id              EQU       $04
+timer_id            EQU       $10
+timer_status        EQU       $10
+timer_control       EQU       $11
+timer_counter0      EQU       $14
+timer_counter1      EQU       $15
+timer_counter2      EQU       $16
+timer_counter3      EQU       $17
+
+; ;------------------------------------
+; ; MAIN
+; ;------------------------------------
+                    ORG       $00
+main: 
+                    LOAD      sp, $0
+                    LOAD      s0, $0
+main_loop: 
+                    OUT       s0, led_id
+
+                    IN        s1, switch_id
+                    TEST      s1, $01
+                    CALL      Z, main_loop_wait_3ms_hard
+                    
+main_loop_wait_3ms_hard: 
+                    ADD       s0, $1
+                    CALL      wait_3ms_hard
+                    JUMP      main_loop
+
+; ;------------------------------------
+; ; wait_3ms
+; ; arguments : none
+; ; results   : none
+; ; Attendre 3ms
+; ;------------------------------------
+
+wait_3ms_hard: 
+; ;                 save
+                    STORE     s0, sp
+                    ADD       sp, $1
+
+; ; 	            Timer Disable
+                    LOAD      s0, $00
+                    OUT       s0, timer_control
+
+; ;                 Timer hardware version
+; ;                 Set 1000 in counter (0x3E8)
+                    LOAD      s0, $03
+                    OUT       s0, timer_counter0
+                    LOAD      s0, $00
+                    OUT       s0, timer_counter1
+                    LOAD      s0, $00
+                    OUT       s0, timer_counter2
+                    OUT       s0, timer_counter3
+
+; ; 	            Timer Enable + Use Tick
+                    LOAD      s0, $09
+                    OUT       s0, timer_control
+wait_3ms_hard_loop: 
+                    IN        s0, timer_status
+                    TEST      s0, $01
+                    JUMP      Z, wait_3ms_hard_loop
+
+; ;                 restore
+                    SUB       sp, $1
+                    FETCH     s0, sp
+                    RET       
+
+; ;------------------------------------
+; ; Interrupt VECTOR
+; ;------------------------------------
+                    ORG       $3FF
+                    RETI      ENABLE
