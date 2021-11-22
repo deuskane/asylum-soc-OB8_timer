@@ -23,10 +23,16 @@ description : SoC with OpenBlaze8, switch, led and timer
 generate:
   # Next line is a pragma, don't modify
   #<GENERATE_BEGIN>
-  gen_asm_counter:
+  gen_asm_counter_1s:
     generator : pbcc_gen
     parameters:
-      file: soft/counter.psm
+      file: soft/counter_1s.psm
+      type: pblazeide
+
+  gen_asm_counter_3ms:
+    generator : pbcc_gen
+    parameters:
+      file: soft/counter_3ms.psm
       type: pblazeide
 
   #<GENERATE_END>
@@ -124,13 +130,21 @@ targets:
 
   # Next line is a pragma, don't modify
   #<TARGETS_BEGIN>
-  sim_asm_counter:
+  sim_asm_counter_1s:
     << : *sim
-    description     : Simulation of the test soft/counter.psm
+    description     : Simulation of the test soft/counter_1s.psm
     filesets_append :
       - files_sim
       - pbcc_dep
-    generate : [gen_asm_counter]
+    generate : [gen_asm_counter_1s]
+
+  sim_asm_counter_3ms:
+    << : *sim
+    description     : Simulation of the test soft/counter_3ms.psm
+    filesets_append :
+      - files_sim
+      - pbcc_dep
+    generate : [gen_asm_counter_3ms]
 
   #<TARGETS_END>
   # Previous line is a pragma, don't modify
