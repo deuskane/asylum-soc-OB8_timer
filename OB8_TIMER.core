@@ -15,9 +15,10 @@ CAPI=2:
 # Date        Version  Author   Description
 # 2021-10-26  1.0.0    mrosiere Created
 # 2021-11-03  1.0.1    mrosiere Use generator
+# 2022-07-13  1.1.0    mrosiere DATA_OE_<INIT/FORCE> in NB_IO
 #-----------------------------------------------------------------------------
 
-name : asylum:soc:OB8_TIMER:1.0.1
+name : asylum:soc:OB8_TIMER:1.1.0
 description : SoC with OpenBlaze8, switch, led and timer
 
 generate:

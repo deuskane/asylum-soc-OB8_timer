@@ -6,7 +6,7 @@
 -- Author     : Mathieu Rosiere
 -- Company    : 
 -- Created    : 2017-04-30
--- Last update: 2021-11-17
+-- Last update: 2022-07-13
 -- Platform   : 
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
@@ -43,6 +43,8 @@ entity OB8_TIMER is
 end OB8_TIMER;
 
 architecture rtl of OB8_TIMER is
+  constant cst0                       : std_logic_vector (8-1 downto 0) := (others => '0');
+  constant cst1                       : std_logic_vector (8-1 downto 0) := (others => '1');
 
   constant ID_SWITCH                  : std_logic_vector (PBI_ADDR_WIDTH-1 downto 0) := "00000000";
   --                                                                                    "00000011"
@@ -107,9 +109,9 @@ begin  -- architecture rtl
   ins_pbi_switch : entity work.pbi_GPIO(rtl)
     generic map(
     NB_IO            => NB_SWITCH,
-    DATA_OE_INIT     => false,
-    DATA_OE_FORCE    => true ,
-    IT_ENABLE        => false, -- GPIO can generate interruption
+    DATA_OE_INIT     => cst0(NB_SWITCH-1 downto 0),
+    DATA_OE_FORCE    => cst1(NB_SWITCH-1 downto 0),
+    IT_ENABLE        => false, -- GPIO can't generate interruption
     ID               => ID_SWITCH
     )
   port map  (
@@ -128,9 +130,9 @@ begin  -- architecture rtl
   ins_pbi_led : entity work.pbi_GPIO(rtl)
     generic map(
     NB_IO            => NB_LED,
-    DATA_OE_INIT     => true ,
-    DATA_OE_FORCE    => true ,
-    IT_ENABLE        => false, -- GPIO can generate interruption
+    DATA_OE_INIT     => cst1(NB_SWITCH-1 downto 0),
+    DATA_OE_FORCE    => cst1(NB_SWITCH-1 downto 0),
+    IT_ENABLE        => false, -- GPIO can't generate interruption
     ID               => ID_LED
     )
   port map  (
